@@ -19,19 +19,17 @@ fi
 
 # Create temporary directory on remote machine
 echo "Creating temporary directory..."
-ssh $REMOTE_USER@$REMOTE_HOST "sudo mkdir -p /tmp/camera_update/templates && sudo chmod -R 777 /tmp/camera_update"
+ssh $REMOTE_USER@$REMOTE_HOST "sudo mkdir -p /tmp/camera_update && sudo chmod -R 777 /tmp/camera_update"
 
 # Copy application files
 echo "Copying application files..."
 scp run_camera.py $REMOTE_USER@$REMOTE_HOST:/tmp/camera_update/
 scp requirements.txt $REMOTE_USER@$REMOTE_HOST:/tmp/camera_update/
-scp -r templates/* $REMOTE_USER@$REMOTE_HOST:/tmp/camera_update/templates/
 
 # Move files to final location and update Python environment
 echo "Updating application files..."
 ssh $REMOTE_USER@$REMOTE_HOST "sudo cp /tmp/camera_update/run_camera.py /opt/camera/ && \
     sudo cp /tmp/camera_update/requirements.txt /opt/camera/ && \
-    sudo cp -r /tmp/camera_update/templates/* /opt/camera/templates/ && \
     cd /opt/camera && \
     sudo ./venv/bin/pip install -r requirements.txt && \
     sudo chown -R root:root /opt/camera"

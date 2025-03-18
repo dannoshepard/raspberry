@@ -23,21 +23,19 @@ ssh $REMOTE_USER@$REMOTE_HOST "sudo apt-get update && sudo apt-get install -y v4
 
 # Create remote directory structure
 echo "Creating remote directory structure..."
-ssh $REMOTE_USER@$REMOTE_HOST "sudo mkdir -p /opt/camera/templates && sudo mkdir -p /tmp/templates && sudo chmod 777 /tmp/templates"
+ssh $REMOTE_USER@$REMOTE_HOST "sudo mkdir -p /opt/camera"
 
 # Copy camera application files
 echo "Copying camera application files..."
 scp run_camera.py $REMOTE_USER@$REMOTE_HOST:/tmp/
 scp requirements.txt $REMOTE_USER@$REMOTE_HOST:/tmp/
 scp setup_python.sh $REMOTE_USER@$REMOTE_HOST:/tmp/
-scp -r templates/* $REMOTE_USER@$REMOTE_HOST:/tmp/templates/
 
 # Move files to final locations and set up Python environment
 echo "Setting up Python environment and moving files..."
 ssh $REMOTE_USER@$REMOTE_HOST "sudo cp /tmp/run_camera.py /opt/camera/ && \
     sudo cp /tmp/requirements.txt /opt/camera/ && \
     sudo cp /tmp/setup_python.sh /opt/camera/ && \
-    sudo cp -r /tmp/templates/* /opt/camera/templates/ && \
     sudo chmod +x /opt/camera/setup_python.sh && \
     cd /opt/camera && \
     sudo ./setup_python.sh && \

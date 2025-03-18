@@ -1,11 +1,13 @@
 import cv2
 import numpy as np
-from flask import Flask, Response, render_template, jsonify
+from flask import Flask, Response, render_template, jsonify, send_file, send_from_directory
 import threading
 import subprocess
 import re
+import os
+from datetime import datetime
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../client/.next')
 
 # Global variables for camera and focus
 cap = None
@@ -113,12 +115,41 @@ def generate_frames():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return send_from_directory(os.path.join(app.static_folder, 'server/app'), 'index.html')
+
+@app.route('/_next/static/<path:path>')
+def next_static(path):
+    return send_from_directory(os.path.join(app.static_folder, 'static'), path)
+
+@app.route('/_next/server/<path:path>')
+def next_server(path):
+    return send_from_directory(os.path.join(app.static_folder, 'server'), path)
+
+@app.route('/static/<path:path>')
+def static_files(path):
+    return send_from_directory(os.path.join(app.static_folder, 'static'), path)
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 @app.route('/video_feed')
 def video_feed():
-    return Response(generate_frames(),
-                   mimetype='multipart/x-mixed-replace; boundary=frame')
+    """Video streaming route."""
+    return Response(
+        generate_frames(),
+        mimetype='multipart/x-mixed-replace; boundary=frame',
+        headers={
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+            'Access-Control-Allow-Origin': '*',
+            'Connection': 'keep-alive'
+        }
+    )
 
 @app.route('/set_focus/<int:focus_value>')
 def set_focus(focus_value):
