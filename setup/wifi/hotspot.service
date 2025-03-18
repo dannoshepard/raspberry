@@ -1,0 +1,13 @@
+[Unit]
+Description=WiFi Hotspot Service
+After=network.target NetworkManager.service
+Requires=NetworkManager.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/setup_hotspot.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target 
