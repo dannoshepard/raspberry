@@ -10,64 +10,68 @@ REMOTE_HOST=$2
 # Check arguments
 check_arguments "$@"
 
-# Test SSH connection
-echo "Testing SSH connection to $REMOTE_USER@$REMOTE_HOST..."
-if ! test_ssh_connection; then
-    echo "Error: Could not establish SSH connection"
-    exit 1
-fi
+# Check remote connection
+check_remote_config
 
-# Install required packages
-echo "Installing required packages..."
-ssh $REMOTE_USER@$REMOTE_HOST "sudo apt-get update && sudo apt-get install -y v4l-utils"
+echo "Deploying camera service to $REMOTE_USER@$REMOTE_HOST..."
 
-# Create remote directory structure
-echo "Creating remote directory structure..."
-ssh $REMOTE_USER@$REMOTE_HOST "sudo mkdir -p /opt/camera"
+# Create temporary directory for files with correct permissions
+echo "Creating temporary directory..."
+ssh $REMOTE_USER@$REMOTE_HOST "sudo rm -rf /tmp/camera_deploy && \
+    sudo mkdir -p /tmp/camera_deploy/app && \
+    sudo chown -R $REMOTE_USER:$REMOTE_USER /tmp/camera_deploy"
 
-# Copy camera application files
-echo "Copying camera application files..."
-scp run_camera.py $REMOTE_USER@$REMOTE_HOST:/tmp/
-scp requirements.txt $REMOTE_USER@$REMOTE_HOST:/tmp/
-scp setup_python.sh $REMOTE_USER@$REMOTE_HOST:/tmp/
+# Copy files to temporary location
+echo "Copying files..."
+scp app/*.py requirements.txt setup_python.sh $REMOTE_USER@$REMOTE_HOST:/tmp/camera_deploy/
 
-# Move files to final locations and set up Python environment
-echo "Setting up Python environment and moving files..."
-ssh $REMOTE_USER@$REMOTE_HOST "sudo cp /tmp/run_camera.py /opt/camera/ && \
-    sudo cp /tmp/requirements.txt /opt/camera/ && \
-    sudo cp /tmp/setup_python.sh /opt/camera/ && \
-    sudo chmod +x /opt/camera/setup_python.sh && \
-    cd /opt/camera && \
-    sudo ./setup_python.sh && \
-    sudo chown -R root:root /opt/camera"
+# Create target directory
+echo "Creating target directory..."
+ssh $REMOTE_USER@$REMOTE_HOST "sudo mkdir -p /opt/camera/app"
 
-# Create systemd service file
+# Set up Python environment
+echo "Setting up Python environment..."
+ssh $REMOTE_USER@$REMOTE_HOST "cd /tmp/camera_deploy && sudo bash setup_python.sh"
+
+# Move files to target location
+echo "Moving files to target location..."
+ssh $REMOTE_USER@$REMOTE_HOST "sudo mv /tmp/camera_deploy/*.py /opt/camera/app/ && sudo mv /tmp/camera_deploy/requirements.txt /opt/camera/"
+
+# Create systemd service
 echo "Creating systemd service..."
-ssh $REMOTE_USER@$REMOTE_HOST "sudo bash -c 'cat > /etc/systemd/system/camera.service << EOL
+cat > /tmp/camera.service << EOL
 [Unit]
-Description=Camera Application Service
+Description=Camera Service
 After=network.target
 
 [Service]
-Type=simple
-User=root
-Group=video
+ExecStart=/bin/sh -c 'cd /opt/camera && /opt/camera/venv/bin/python -m app'
 WorkingDirectory=/opt/camera
-ExecStart=/opt/camera/venv/bin/python run_camera.py
 Restart=always
-RestartSec=3
+User=root
+Environment=PYTHONUNBUFFERED=1
+Environment=CLIENT_DIR=/opt/client/.next
 
 [Install]
 WantedBy=multi-user.target
-EOL'"
+EOL
 
-# Enable and start the service
-echo "Starting camera service..."
-ssh $REMOTE_USER@$REMOTE_HOST "sudo systemctl daemon-reload && \
-    sudo systemctl enable camera.service && \
-    sudo systemctl start camera.service"
+# Copy and enable service
+scp /tmp/camera.service $REMOTE_USER@$REMOTE_HOST:/tmp/camera_deploy/
+ssh $REMOTE_USER@$REMOTE_HOST "sudo mv /tmp/camera_deploy/camera.service /etc/systemd/system/ && \
+    sudo systemctl daemon-reload && \
+    sudo systemctl enable camera.service"
 
-# Check service status
-check_service_status
+# Clean up temporary files
+echo "Cleaning up..."
+ssh $REMOTE_USER@$REMOTE_HOST "sudo rm -rf /tmp/camera_deploy"
 
-print_completion_message "deployment" "installed and running" 
+# Restart service
+echo "Restarting camera service..."
+ssh $REMOTE_USER@$REMOTE_HOST "sudo systemctl restart camera.service"
+
+# Show status
+echo "Showing service status..."
+ssh $REMOTE_USER@$REMOTE_HOST "sudo systemctl status camera.service"
+
+echo "Deployment complete!" 

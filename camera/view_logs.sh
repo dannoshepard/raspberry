@@ -10,12 +10,8 @@ REMOTE_HOST=$2
 # Check arguments
 check_arguments "$@"
 
-# Test SSH connection
-echo "Testing SSH connection to $REMOTE_USER@$REMOTE_HOST..."
-if ! test_ssh_connection; then
-    echo "Error: Could not establish SSH connection"
-    exit 1
-fi
+# Check remote connection
+check_remote_config
 
 echo "Streaming camera service logs..."
 echo "Press Ctrl+C to stop"

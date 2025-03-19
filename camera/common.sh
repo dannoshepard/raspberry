@@ -1,9 +1,12 @@
 #!/bin/bash
 
-# Function to test SSH connection
-test_ssh_connection() {
-    ssh $REMOTE_USER@$REMOTE_HOST "echo 'SSH connection successful'"
-    return $?
+# Function to check remote configuration
+check_remote_config() {
+    echo "Testing SSH connection to $REMOTE_USER@$REMOTE_HOST..."
+    if ! ssh $REMOTE_USER@$REMOTE_HOST "echo 'SSH connection successful'"; then
+        echo "Error: Could not establish SSH connection"
+        exit 1
+    fi
 }
 
 # Function to check required arguments

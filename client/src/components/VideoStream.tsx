@@ -75,7 +75,7 @@ export default function VideoStream({ url, timestamp, onRecordingStateChange }: 
 
     // Create a canvas element to capture the image stream
     const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth || 640; // Use natural dimensions
+    canvas.width = img.naturalWidth || 640;
     canvas.height = img.naturalHeight || 480;
     const ctx = canvas.getContext('2d');
     
@@ -131,6 +131,7 @@ export default function VideoStream({ url, timestamp, onRecordingStateChange }: 
     <div className="relative bg-black rounded-lg overflow-hidden">
       <img
         ref={imgRef}
+        src={url}
         className="w-full h-auto"
         style={{ objectFit: 'contain' }}
         alt="Camera feed"

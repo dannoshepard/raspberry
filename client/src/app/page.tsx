@@ -10,7 +10,7 @@ export default function Home() {
     focus: 30,
     backlightEnabled: true
   });
-  const streamUrl = 'http://10.0.0.2:5000/video_feed';
+  const streamUrl = '/video_feed';
   const [timestamp, setTimestamp] = useState('');
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function Home() {
 
   const handleFocusChange = async (value: number) => {
     try {
-      const response = await fetch(`http://10.0.0.2:5000/set_focus/${value}`);
+      const response = await fetch(`/set_focus/${value}`);
       if (response.ok) {
         setSettings(prev => ({ ...prev, focus: value }));
       }
@@ -38,7 +38,7 @@ export default function Home() {
 
   const handleBacklightToggle = async (enabled: boolean) => {
     try {
-      const response = await fetch(`http://10.0.0.2:5000/set_backlight/${enabled ? 1 : 0}`);
+      const response = await fetch(`/set_backlight/${enabled ? 1 : 0}`);
       if (response.ok) {
         setSettings(prev => ({ ...prev, backlightEnabled: enabled }));
       }
